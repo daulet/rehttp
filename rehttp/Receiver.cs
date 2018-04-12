@@ -11,10 +11,13 @@ namespace Rehttp
 {
     public static class Receiver
     {
+        private readonly static HttpClient _httpClient = new HttpClient();
+
         [FunctionName("Receiver")]
         public static async Task<IActionResult> RunAsync(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{*path}")] HttpRequest request,
             string path,
+            [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] IAsyncCollector<QueuedRequest> queuedRequests,
             TraceWriter log)
         {
             log.Info($"Received request for {path}");
@@ -24,28 +27,39 @@ namespace Rehttp
                 return new BadRequestObjectResult($"{path} is not valid absolute Uri");
             }
 
-            using (var client = new HttpClient())
+            string message = null;
+            try
             {
-                try
+                using (var response = await _httpClient.GetAsync(uri))
                 {
-                    using (var response = await client.GetAsync(uri))
+                    if (response.IsSuccessStatusCode)
                     {
                         log.Info($"Received response: {await response.Content.ReadAsStringAsync()}");
 
                         return new OkObjectResult($"Received {response.StatusCode} from {uri}");
                     }
-                }
-                catch (ArgumentException ex)
-                {
-                    return new BadRequestObjectResult(ex.Message);
-                }
-                catch (HttpRequestException ex)
-                {
-                    log.Info($"Request exception: {ex}");
 
-                    return new OkObjectResult($"Received {ex.Message} from {uri}");
+                    message = $"Received {response.StatusCode} from {uri}";
                 }
             }
+            catch (ArgumentException ex)
+            {
+                return new BadRequestObjectResult(ex.Message);
+            }
+            catch (HttpRequestException ex)
+            {
+                log.Info($"Request exception: {ex}");
+                message = $"Received {ex.Message} from {uri}";
+            }
+
+            var queueMessage = new QueuedRequest()
+            {
+                Destination = path,
+                Request = request
+            };
+            await queuedRequests.AddAsync(queueMessage);
+            
+            return new OkObjectResult(message);
         }
     }
 }
