@@ -3,27 +3,49 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
-using Newtonsoft.Json;
-using System.IO;
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Rehttp
 {
     public static class Receiver
     {
-        [FunctionName("Function1")]
-        public static IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)]HttpRequest req, TraceWriter log)
+        [FunctionName("Receiver")]
+        public static async Task<IActionResult> RunAsync(
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{*path}")] HttpRequest request,
+            string path,
+            TraceWriter log)
         {
-            log.Info("C# HTTP trigger function processed a request.");
+            log.Info($"Received request for {path}");
 
-            string name = req.Query["name"];
+            if (!Uri.TryCreate(path, UriKind.Absolute, out var uri))
+            {
+                return new BadRequestObjectResult($"{path} is not valid absolute Uri");
+            }
 
-            string requestBody = new StreamReader(req.Body).ReadToEnd();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
+            using (var client = new HttpClient())
+            {
+                try
+                {
+                    using (var response = await client.GetAsync(uri))
+                    {
+                        log.Info($"Received response: {await response.Content.ReadAsStringAsync()}");
 
-            return name != null
-                ? (ActionResult)new OkObjectResult($"Hello, {name}")
-                : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
+                        return new OkObjectResult($"Received {response.StatusCode} from {uri}");
+                    }
+                }
+                catch (ArgumentException ex)
+                {
+                    return new BadRequestObjectResult(ex.Message);
+                }
+                catch (HttpRequestException ex)
+                {
+                    log.Info($"Request exception: {ex}");
+
+                    return new OkObjectResult($"Received {ex.Message} from {uri}");
+                }
+            }
         }
     }
 }
