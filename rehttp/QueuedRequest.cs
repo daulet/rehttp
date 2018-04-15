@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using System.Net.Http;
 
 namespace Rehttp
 {
@@ -6,6 +7,6 @@ namespace Rehttp
     {
         public string Destination { get; set; }
 
-        public HttpRequest Request { get; set; }
+        public HttpContent Content { get; set; }
     }
 }

@@ -15,7 +15,7 @@ namespace Rehttp
 
         [FunctionName("Receiver")]
         public static async Task<IActionResult> RunAsync(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{*path}")] HttpRequest request,
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{*path}")] HttpRequestMessage request,
             string path,
             [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] IAsyncCollector<QueuedRequest> queuedRequests,
             TraceWriter log)
@@ -55,7 +55,7 @@ namespace Rehttp
             var queueMessage = new QueuedRequest()
             {
                 Destination = path,
-                Request = request
+                Content = request.Content
             };
             await queuedRequests.AddAsync(queueMessage);
             
