@@ -1,8 +1,7 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -11,16 +10,18 @@ namespace Rehttp
 {
     public static class Receiver
     {
-        private readonly static HttpClient _httpClient = new HttpClient();
+        public static HttpClient SharedHttpClient = new HttpClient();
 
         [FunctionName("Receiver")]
         public static async Task<IActionResult> RunAsync(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{*path}")] HttpRequestMessage request,
+            [HttpTrigger(AuthorizationLevel.Function,
+                "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
+                Route = "{*path}")] HttpRequestMessage request,
             string path,
             [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] IAsyncCollector<QueuedRequest> queuedRequests,
-            TraceWriter log)
+            ILogger log)
         {
-            log.Info($"Received request for {path}");
+            log.LogInformation($"Received request for {path}");
 
             if (!Uri.TryCreate(path, UriKind.Absolute, out var uri))
             {
@@ -30,11 +31,12 @@ namespace Rehttp
             string message = null;
             try
             {
-                using (var response = await _httpClient.GetAsync(uri))
+                var requestMessage = new HttpRequestMessage(request.Method, uri);
+                using (var response = await SharedHttpClient.SendAsync(requestMessage))
                 {
                     if (response.IsSuccessStatusCode)
                     {
-                        log.Info($"Received response: {await response.Content.ReadAsStringAsync()}");
+                        log.LogInformation($"Received response: {await response.Content.ReadAsStringAsync()}");
 
                         return new OkObjectResult($"Received {response.StatusCode} from {uri}");
                     }
@@ -48,7 +50,7 @@ namespace Rehttp
             }
             catch (HttpRequestException ex)
             {
-                log.Info($"Request exception: {ex}");
+                log.LogInformation($"Request exception: {ex}");
                 message = $"Received {ex.Message} from {uri}";
             }
 
