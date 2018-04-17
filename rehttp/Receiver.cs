@@ -1,3 +1,4 @@
+using Indigo.Functions.Injection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -10,8 +11,6 @@ namespace Rehttp
 {
     public static class Receiver
     {
-        public static HttpClient SharedHttpClient = new HttpClient();
-
         [FunctionName("Receiver")]
         public static async Task<IActionResult> RunAsync(
             [HttpTrigger(AuthorizationLevel.Function,
@@ -19,6 +18,7 @@ namespace Rehttp
                 Route = "{*path}")] HttpRequestMessage request,
             string path,
             [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] IAsyncCollector<QueuedRequest> queuedRequests,
+            [Inject] HttpClient httpClient,
             ILogger log)
         {
             log.LogInformation($"Received request for {path}");
@@ -32,7 +32,7 @@ namespace Rehttp
             try
             {
                 var requestMessage = new HttpRequestMessage(request.Method, uri);
-                using (var response = await SharedHttpClient.SendAsync(requestMessage))
+                using (var response = await httpClient.SendAsync(requestMessage))
                 {
                     if (response.IsSuccessStatusCode)
                     {

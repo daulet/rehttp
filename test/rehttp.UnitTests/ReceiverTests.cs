@@ -21,18 +21,18 @@ namespace rehttp.UnitTests
         [InlineData("TRACE")]
         public async Task RunAsync_SuccessStatusCode_NoRequestQueued(string httpMethod)
         {
+            var method = new HttpMethod(httpMethod);
             var targetUrl = "http://endpoint.io/path/to/media";
 
             var mockHttp = new MockHttpMessageHandler();
-            var method = new HttpMethod(httpMethod);
             mockHttp.Expect(method, targetUrl)
                     .Respond(HttpStatusCode.OK, new StringContent(string.Empty));
-            Receiver.SharedHttpClient = mockHttp.ToHttpClient();
 
             await Receiver.RunAsync(
                 new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                 targetUrl,
                 null,
+                mockHttp.ToHttpClient(),
                 Mock.Of<ILogger>());
 
             mockHttp.VerifyNoOutstandingExpectation();
