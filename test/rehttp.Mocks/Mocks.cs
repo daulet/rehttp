@@ -7,9 +7,9 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace rehttp.IntegrationTests
+namespace rehttp.Mocks
 {
-    public static class Endpoints
+    public static class Mocks
     {
         [FunctionName("Ok")]
         public static IActionResult Ok(
