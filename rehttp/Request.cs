@@ -3,7 +3,7 @@ using System.Net.Http;
 
 namespace Rehttp
 {
-    public class QueuedRequest
+    public class Request
     {
         public string Destination { get; set; }
 

@@ -17,7 +17,7 @@ namespace Rehttp
                 "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
                 Route = "{*path}")] HttpRequestMessage request,
             string path,
-            [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] IAsyncCollector<QueuedRequest> queuedRequests,
+            [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] IAsyncCollector<Request> queuedRequests,
             [Inject] HttpClient httpClient,
             ILogger log)
         {
@@ -54,7 +54,7 @@ namespace Rehttp
                 message = $"Received {ex.Message} from {uri}";
             }
 
-            var queueMessage = new QueuedRequest()
+            var queueMessage = new Request()
             {
                 Destination = path,
                 Content = request.Content
