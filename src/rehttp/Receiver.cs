@@ -32,6 +32,11 @@ namespace Rehttp
             try
             {
                 var requestMessage = new HttpRequestMessage(request.Method, uri);
+                if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head)
+                {
+                    requestMessage.Content = request.Content;
+                };
+
                 using (var response = await httpClient.SendAsync(requestMessage))
                 {
                     if (response.IsSuccessStatusCode)

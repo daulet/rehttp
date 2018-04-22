@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Rehttp.Mocks;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Xunit;
@@ -21,7 +22,7 @@ namespace Rehttp.IntegrationTests
         [InlineData("POST")]
         [InlineData("PUT")]
         [InlineData("TRACE")]
-        public async Task RunAsync_TargetIsAvailable_CorrectRequestAsync(string httpMethod)
+        public async Task RunAsync_TargetIsAvailable_CorrectMethodSentAsync(string httpMethod)
         {
             using (var uniqueQueue = new UniqueQueue())
             {
@@ -37,7 +38,35 @@ namespace Rehttp.IntegrationTests
                 var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
 
                 Assert.Equal(method, invocation.Method);
-                Assert.Equal(string.Empty, invocation.Content);
+            }
+        }
+
+        [Theory]
+        [InlineData("DELETE")]
+        [InlineData("OPTIONS")]
+        [InlineData("POST")]
+        [InlineData("PUT")]
+        [InlineData("TRACE")]
+        public async Task RunAsync_TargetIsAvailable_CorrectContentSentAsync(string httpMethod)
+        {
+            using (var uniqueQueue = new UniqueQueue())
+            {
+                var method = new HttpMethod(httpMethod);
+                var content = Guid.NewGuid().ToString();
+                var queueName = uniqueQueue.Queue.Name;
+
+                await Client.SendAsync(
+                    new HttpRequestMessage(method,
+                        $"http://localhost:7072/r/http://localhost:7073/test/ok/{queueName}")
+                    {
+                        Content = new StringContent(content),
+                    }
+                );
+
+                var message = await uniqueQueue.Queue.GetMessageAsync();
+                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
+
+                Assert.Equal(content, invocation.Content);
             }
         }
     }
