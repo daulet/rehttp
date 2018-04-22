@@ -14,7 +14,7 @@ namespace Rehttp.Mocks
     public static class Mocks
     {
         [FunctionName("OkPathRequest")]
-        public static IActionResult OkPathRequest(
+        public static async Task<IActionResult> OkPathRequestAsync(
             [HttpTrigger(AuthorizationLevel.Function,
                 "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
                 Route = "ok/{*path}")] HttpRequestMessage request,
@@ -22,12 +22,12 @@ namespace Rehttp.Mocks
             [Queue(queueName: "{path}", Connection = "InvocationQueue")] IAsyncCollector<Invocation> invocations,
             ILogger log)
         {
-            log.LogInformation($"Received {nameof(OkPathRequest)} request");
+            log.LogInformation($"Received {nameof(OkPathRequestAsync)} request");
 
-            invocations.AddAsync(new Invocation()
+            await invocations.AddAsync(new Invocation()
             {
                 Method = request.Method,
-                Content = request.Content,
+                Content = await request.Content.ReadAsStringAsync(),
             });
 
             return new OkResult();

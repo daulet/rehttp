@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "rehttp", "src\rehttp\rehttp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "rehttp.Mocks", "test\rehttp.Mocks\rehttp.Mocks.csproj", "{870A777B-04CA-45BD-9289-AAA9B0699D0E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "rehttp.IntegrationTests", "test\rehttp.IntegrationTests\rehttp.IntegrationTests.csproj", "{06E9F848-1EAF-4AF4-88D7-54AEE016C69C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{870A777B-04CA-45BD-9289-AAA9B0699D0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{870A777B-04CA-45BD-9289-AAA9B0699D0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{870A777B-04CA-45BD-9289-AAA9B0699D0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06E9F848-1EAF-4AF4-88D7-54AEE016C69C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06E9F848-1EAF-4AF4-88D7-54AEE016C69C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06E9F848-1EAF-4AF4-88D7-54AEE016C69C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06E9F848-1EAF-4AF4-88D7-54AEE016C69C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
