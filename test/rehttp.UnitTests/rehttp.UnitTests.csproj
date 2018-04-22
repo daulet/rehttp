@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\rehttp\rehttp.csproj" />
+    <ProjectReference Include="..\..\src\rehttp\rehttp.csproj" />
   </ItemGroup>
 
 </Project>
