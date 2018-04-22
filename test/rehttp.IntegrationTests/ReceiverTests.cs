@@ -34,8 +34,9 @@ namespace Rehttp.IntegrationTests
                 );
 
                 var message = await uniqueQueue.Queue.GetMessageAsync();
-                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
+                Assert.NotNull(message);
 
+                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
                 Assert.Equal($"http://localhost:7073/test/ok/long/{path1}/{path2}/{path3}", invocation.TargetUri.ToString());
             }
         }
@@ -63,8 +64,9 @@ namespace Rehttp.IntegrationTests
                 );
 
                 var message = await uniqueQueue.Queue.GetMessageAsync();
-                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
+                Assert.NotNull(message);
 
+                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
                 Assert.Equal($"http://localhost:7073/test/ok/{queueName}?param1={param1}&param2={param2}", invocation.TargetUri.ToString());
             }
         }
@@ -90,8 +92,9 @@ namespace Rehttp.IntegrationTests
                 );
 
                 var message = await uniqueQueue.Queue.GetMessageAsync();
-                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
+                Assert.NotNull(message);
 
+                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
                 Assert.Equal(method, invocation.Method);
             }
         }
@@ -119,8 +122,9 @@ namespace Rehttp.IntegrationTests
                 );
 
                 var message = await uniqueQueue.Queue.GetMessageAsync();
-                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
+                Assert.NotNull(message);
 
+                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
                 Assert.Equal(content, invocation.Content);
             }
         }
