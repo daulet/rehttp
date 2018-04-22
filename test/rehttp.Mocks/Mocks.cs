@@ -3,20 +3,32 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace rehttp.Mocks
+namespace Rehttp.Mocks
 {
     public static class Mocks
     {
-        [FunctionName("Ok")]
-        public static IActionResult Ok(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "ok")] HttpRequest req,
-            TraceWriter log)
+        [FunctionName("OkPathRequest")]
+        public static IActionResult OkPathRequest(
+            [HttpTrigger(AuthorizationLevel.Function,
+                "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
+                Route = "ok/{*path}")] HttpRequestMessage request,
+            string path,
+            [Queue(queueName: "{path}", Connection = "InvocationQueue")] IAsyncCollector<Invocation> invocations,
+            ILogger log)
         {
-            log.Info($"Received {nameof(Ok)} request");
+            log.LogInformation($"Received {nameof(OkPathRequest)} request");
+
+            invocations.AddAsync(new Invocation()
+            {
+                Method = request.Method,
+                Content = request.Content,
+            });
 
             return new OkResult();
         }

@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using System.Net.Http;
+﻿using System.Net.Http;
 
 namespace Rehttp
 {
