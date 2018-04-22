@@ -11,9 +11,12 @@ namespace Rehttp.IntegrationTests
         public CloudQueueClient QueueClient { get; set; }
 
         public UniqueQueue()
+            : this(Guid.NewGuid().ToString())
         {
-            var queueName = Guid.NewGuid().ToString();
+        }
 
+        public UniqueQueue(string queueName)
+        {
             var storageAccount = CloudStorageAccount.Parse("UseDevelopmentStorage=true");
             QueueClient = storageAccount.CreateCloudQueueClient();
             Queue = QueueClient.GetQueueReference(queueName);

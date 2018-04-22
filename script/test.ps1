@@ -1,6 +1,6 @@
 Write-Host "Running unit test" -ForegroundColor Blue
 
-dotnet test .\test\rehttp.UnitTests\rehttp.UnitTests.csproj
+dotnet test .\test\rehttp.UnitTests\rehttp.UnitTests.csproj --no-build
 
 if ($LastExitCode -ne 0) {
     return $LastExitCode

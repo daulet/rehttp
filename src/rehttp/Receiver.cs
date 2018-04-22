@@ -21,11 +21,13 @@ namespace Rehttp
             [Inject] HttpClient httpClient,
             ILogger log)
         {
-            log.LogInformation($"Received request for {path}");
+            log.LogInformation($"Received request {request.RequestUri}");
 
-            if (!Uri.TryCreate(path, UriKind.Absolute, out var uri))
+            // remove "/r/" from the path and query part of URL
+            var targetUri = request.RequestUri.PathAndQuery.Substring(3);
+            if (!Uri.TryCreate(targetUri, UriKind.Absolute, out var uri))
             {
-                return new BadRequestObjectResult($"{path} is not valid absolute Uri");
+                return new BadRequestObjectResult($"{targetUri} is not valid absolute Uri");
             }
 
             string message = null;

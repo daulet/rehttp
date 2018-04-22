@@ -26,8 +26,30 @@ namespace Rehttp.Mocks
 
             await invocations.AddAsync(new Invocation()
             {
-                Method = request.Method,
                 Content = await request.Content.ReadAsStringAsync(),
+                Method = request.Method,
+                TargetUri = request.RequestUri,
+            });
+
+            return new OkResult();
+        }
+
+        [FunctionName("OkLongPathRequest")]
+        public static async Task<IActionResult> OkLongPathRequest(
+            [HttpTrigger(AuthorizationLevel.Function,
+                "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
+                Route = "ok/long/{*path}")] HttpRequestMessage request,
+            string path,
+            [Queue(queueName: "mockpaths", Connection = "InvocationQueue")] IAsyncCollector<Invocation> invocations,
+            ILogger log)
+        {
+            log.LogInformation($"Received {nameof(OkPathRequestAsync)} request");
+
+            await invocations.AddAsync(new Invocation()
+            {
+                Content = await request.Content.ReadAsStringAsync(),
+                Method = request.Method,
+                TargetUri = request.RequestUri,
             });
 
             return new OkResult();
