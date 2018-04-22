@@ -41,14 +41,14 @@ namespace Rehttp
 
                 using (var response = await httpClient.SendAsync(requestMessage))
                 {
+                    message = $"Received {response.StatusCode} from {uri}";
+
                     if (response.IsSuccessStatusCode)
                     {
                         log.LogInformation($"Received response: {await response.Content.ReadAsStringAsync()}");
 
-                        return new OkObjectResult($"Received {response.StatusCode} from {uri}");
+                        return new OkObjectResult(message);
                     }
-
-                    message = $"Received {response.StatusCode} from {uri}";
                 }
             }
             catch (ArgumentException ex)
