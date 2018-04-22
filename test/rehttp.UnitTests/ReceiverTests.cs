@@ -1,13 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using Moq;
-using Rehttp;
 using RichardSzalay.MockHttp;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace rehttp.UnitTests
+namespace Rehttp.UnitTests
 {
     public class ReceiverTests
     {
