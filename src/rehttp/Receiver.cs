@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage.Queue;
+using Newtonsoft.Json;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -17,7 +19,7 @@ namespace Rehttp
                 "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
                 Route = "{*path}")] HttpRequestMessage request,
             string path,
-            [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] IAsyncCollector<Request> queuedRequests,
+            [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] CloudQueue queue,
             [Inject] HttpClient httpClient,
             ILogger log)
         {
@@ -30,7 +32,7 @@ namespace Rehttp
                 return new BadRequestObjectResult($"{targetUri} is not valid absolute Uri");
             }
 
-            string message = null;
+            string responseMessage = null;
             try
             {
                 var requestMessage = new HttpRequestMessage(request.Method, uri);
@@ -41,13 +43,13 @@ namespace Rehttp
 
                 using (var response = await httpClient.SendAsync(requestMessage))
                 {
-                    message = $"Received {response.StatusCode} from {uri}";
+                    responseMessage = $"Received {response.StatusCode} from {uri}";
 
                     if (response.IsSuccessStatusCode)
                     {
                         log.LogInformation($"Received response: {await response.Content.ReadAsStringAsync()}");
 
-                        return new OkObjectResult(message);
+                        return new OkObjectResult(responseMessage);
                     }
                 }
             }
@@ -58,17 +60,24 @@ namespace Rehttp
             catch (HttpRequestException ex)
             {
                 log.LogInformation($"Request exception: {ex}");
-                message = $"Received {ex.Message} from {uri}";
+                responseMessage = $"Received {ex.Message} from {uri}";
             }
 
-            var queueMessage = new Request()
-            {
-                Destination = path,
-                Content = request.Content
-            };
-            await queuedRequests.AddAsync(queueMessage);
+            var message = new CloudQueueMessage(
+                JsonConvert.SerializeObject(
+                    new Request()
+                    {
+                        Destination = path,
+                        Content = request.Content
+                    }));
+
+            await queue.AddMessageAsync(message,
+                timeToLive: TimeSpan.FromDays(2),
+                initialVisibilityDelay: TimeSpan.FromMinutes(5),
+                options: queue.ServiceClient.DefaultRequestOptions,
+                operationContext: null);
             
-            return new OkObjectResult(message);
+            return new OkObjectResult(responseMessage);
         }
     }
 }
