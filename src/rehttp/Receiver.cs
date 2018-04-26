@@ -1,10 +1,10 @@
+using Google.Protobuf;
 using Indigo.Functions.Injection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Queue;
-using Newtonsoft.Json;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -13,6 +13,8 @@ namespace Rehttp
 {
     public static class Receiver
     {
+        public const long KB = 1024;
+
         [FunctionName("Receiver")]
         public static async Task<IActionResult> RunAsync(
             [HttpTrigger(AuthorizationLevel.Function,
@@ -63,13 +65,29 @@ namespace Rehttp
                 responseMessage = $"Received {ex.Message} from {uri}";
             }
 
-            var message = new CloudQueueMessage(
-                JsonConvert.SerializeObject(
-                    new Request()
-                    {
-                        Destination = path,
-                        Content = request.Content
-                    }));
+            var serializableRequest = new Request()
+            {
+                Destination = targetUri,
+                Method = request.Method.Method,
+            };
+
+            if (request.Content != null)
+            {
+                serializableRequest.Content = ByteString.CopyFrom(await request.Content.ReadAsByteArrayAsync());
+            }
+
+            // 48KB is a limit for byte array queue messages
+            // https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-azure-and-service-bus-queues-compared-contrasted#capacity-and-quotas
+            // reserving 1KB for other properties of the message, like TTL
+            if (serializableRequest.CalculateSize() > 47 * KB)
+            {
+
+            }
+
+            // TODO: upgrade to Microsoft.Azure.Storage.Common and replace with new CloudQueueMessage(requestAsBytes)
+            // or at least bump version of Microsoft.WindowsAzure.Storage
+            var message = new CloudQueueMessage(null);
+            message.SetMessageContent(serializableRequest.ToByteArray());
 
             await queue.AddMessageAsync(message,
                 timeToLive: TimeSpan.FromDays(2),

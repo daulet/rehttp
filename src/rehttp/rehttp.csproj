@@ -5,8 +5,10 @@
     <RootNamespace>Rehttp</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.5.1" />
     <PackageReference Include="Indigo.Functions.Injection" Version="0.1.0-prerelease" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.13" />
+    <PackageReference Include="MsBuild.ProtocolBuffers" Version="1.1.0" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
@@ -16,5 +18,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProtoC Remove="http_request.proto" />
   </ItemGroup>
 </Project>
