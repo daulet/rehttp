@@ -3,6 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AzureFunctionsVersion>v2</AzureFunctionsVersion>
     <RootNamespace>Rehttp</RootNamespace>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Indigo.Functions.Injection" Version="0.1.0-prerelease" />

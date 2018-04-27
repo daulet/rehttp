@@ -44,13 +44,13 @@ namespace Rehttp
                     requestMessage.Content = request.Content;
                 };
 
-                using (var response = await httpClient.SendAsync(requestMessage))
+                using (var response = await httpClient.SendAsync(requestMessage).ConfigureAwait(false))
                 {
                     responseMessage = $"Received {response.StatusCode} from {uri}";
 
                     if (response.IsSuccessStatusCode)
                     {
-                        log.LogInformation($"Received response: {await response.Content.ReadAsStringAsync()}");
+                        log.LogInformation($"Received response: {await response.Content.ReadAsStringAsync().ConfigureAwait(false)}");
 
                         return new OkObjectResult(responseMessage);
                     }
@@ -73,7 +73,7 @@ namespace Rehttp
             };
             if (request.Content != null)
             {
-                serializableRequest.Content = await request.Content.ReadAsByteArrayAsync();
+                serializableRequest.Content = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
             }
 
             var serializedRequest = JsonConvert.SerializeObject(serializableRequest);
@@ -88,10 +88,11 @@ namespace Rehttp
 
             var message = new CloudQueueMessage(serializedRequest);
             await queue.AddMessageAsync(message,
-                timeToLive: TimeSpan.FromDays(2),
-                initialVisibilityDelay: TimeSpan.FromMinutes(5),
-                options: queue.ServiceClient.DefaultRequestOptions,
-                operationContext: null);
+                    timeToLive: TimeSpan.FromDays(2),
+                    initialVisibilityDelay: TimeSpan.FromMinutes(5),
+                    options: queue.ServiceClient.DefaultRequestOptions,
+                    operationContext: null)
+                .ConfigureAwait(false);
             
             return new OkObjectResult(responseMessage);
         }

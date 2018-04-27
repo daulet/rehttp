@@ -35,11 +35,12 @@ namespace Rehttp.UnitTests
             var queueMock = new Mock<CloudQueue>(MockBehavior.Strict, new Uri("http://localhost"));
 
             await Receiver.RunAsync(
-                new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                targetUrl,
-                queueMock.Object,
-                mockHttp.ToHttpClient(),
-                Mock.Of<ILogger>());
+                    new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
+                    targetUrl,
+                    queueMock.Object,
+                    mockHttp.ToHttpClient(),
+                    Mock.Of<ILogger>())
+                .ConfigureAwait(false);
 
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.VerifyAll();
@@ -69,11 +70,12 @@ namespace Rehttp.UnitTests
                 .Returns(Task.CompletedTask);
 
             await Receiver.RunAsync(
-                new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                targetUrl,
-                queueMock.Object,
-                mockHttp.ToHttpClient(),
-                Mock.Of<ILogger>());
+                    new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
+                    targetUrl,
+                    queueMock.Object,
+                    mockHttp.ToHttpClient(),
+                    Mock.Of<ILogger>())
+                .ConfigureAwait(false);
 
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.VerifyAll();
@@ -99,11 +101,12 @@ namespace Rehttp.UnitTests
             var queueMock = new Mock<CloudQueue>(MockBehavior.Loose, new Uri("http://localhost"));
 
             await Receiver.RunAsync(
-                new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                targetUrl,
-                queueMock.Object,
-                mockHttp.ToHttpClient(),
-                Mock.Of<ILogger>());
+                    new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
+                    targetUrl,
+                    queueMock.Object,
+                    mockHttp.ToHttpClient(),
+                    Mock.Of<ILogger>())
+                .ConfigureAwait(false);
 
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(
@@ -132,11 +135,12 @@ namespace Rehttp.UnitTests
             var queueMock = new Mock<CloudQueue>(MockBehavior.Loose, new Uri("http://localhost"));
 
             await Receiver.RunAsync(
-                new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                "http://endpoint.io/path/to/media",
-                queueMock.Object,
-                mockHttp.ToHttpClient(),
-                Mock.Of<ILogger>());
+                    new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
+                    "http://endpoint.io/path/to/media",
+                    queueMock.Object,
+                    mockHttp.ToHttpClient(),
+                    Mock.Of<ILogger>())
+                .ConfigureAwait(false);
 
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(x => x.AddMessageAsync(
@@ -165,11 +169,12 @@ namespace Rehttp.UnitTests
             var queueMock = new Mock<CloudQueue>(MockBehavior.Loose, new Uri("http://localhost"));
 
             await Receiver.RunAsync(
-                new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                targetUrl,
-                queueMock.Object,
-                mockHttp.ToHttpClient(),
-                Mock.Of<ILogger>());
+                    new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
+                    targetUrl,
+                    queueMock.Object,
+                    mockHttp.ToHttpClient(),
+                    Mock.Of<ILogger>())
+                .ConfigureAwait(false);
 
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(x => x.AddMessageAsync(
@@ -201,14 +206,15 @@ namespace Rehttp.UnitTests
             var queueMock = new Mock<CloudQueue>(MockBehavior.Loose, new Uri("http://localhost"));
 
             await Receiver.RunAsync(
-                new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}")
-                {
-                    Content = new ByteArrayContent(bytes),
-                },
-                targetUrl,
-                queueMock.Object,
-                mockHttp.ToHttpClient(),
-                Mock.Of<ILogger>());
+                    new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}")
+                    {
+                        Content = new ByteArrayContent(bytes),
+                    },
+                    targetUrl,
+                    queueMock.Object,
+                    mockHttp.ToHttpClient(),
+                    Mock.Of<ILogger>())
+                .ConfigureAwait(false);
 
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(x => x.AddMessageAsync(
