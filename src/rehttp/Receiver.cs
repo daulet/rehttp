@@ -1,12 +1,13 @@
-using Google.Protobuf;
 using Indigo.Functions.Injection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage.Queue;
+using Newtonsoft.Json;
 using System;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Rehttp
@@ -70,25 +71,22 @@ namespace Rehttp
                 Destination = targetUri,
                 Method = request.Method.Method,
             };
-
             if (request.Content != null)
             {
-                serializableRequest.Content = ByteString.CopyFrom(await request.Content.ReadAsByteArrayAsync());
+                serializableRequest.Content = await request.Content.ReadAsByteArrayAsync();
             }
+
+            var serializedRequest = JsonConvert.SerializeObject(serializableRequest);
 
             // 48KB is a limit for byte array queue messages
             // https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-azure-and-service-bus-queues-compared-contrasted#capacity-and-quotas
             // reserving 1KB for other properties of the message, like TTL
-            if (serializableRequest.CalculateSize() > 47 * KB)
+            if (Encoding.Unicode.GetByteCount(serializedRequest) > 47 * KB)
             {
 
             }
 
-            // TODO: upgrade to Microsoft.Azure.Storage.Common and replace with new CloudQueueMessage(requestAsBytes)
-            // or at least bump version of Microsoft.WindowsAzure.Storage
-            var message = new CloudQueueMessage(null);
-            message.SetMessageContent(serializableRequest.ToByteArray());
-
+            var message = new CloudQueueMessage(serializedRequest);
             await queue.AddMessageAsync(message,
                 timeToLive: TimeSpan.FromDays(2),
                 initialVisibilityDelay: TimeSpan.FromMinutes(5),

@@ -1,10 +1,11 @@
-﻿using Google.Protobuf;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Queue;
 using Moq;
+using Newtonsoft.Json;
 using RichardSzalay.MockHttp;
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -140,7 +141,7 @@ namespace Rehttp.UnitTests
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(x => x.AddMessageAsync(
                 It.Is<CloudQueueMessage>(m =>
-                    Request.Parser.ParseFrom(m.AsBytes).Destination == targetUrl),
+                    JsonConvert.DeserializeObject<Request>(m.AsString).Destination == targetUrl),
                 It.IsAny<TimeSpan?>(), It.IsAny<TimeSpan?>(), It.IsAny<QueueRequestOptions>(), It.IsAny<OperationContext>()));
         }
 
@@ -173,7 +174,7 @@ namespace Rehttp.UnitTests
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(x => x.AddMessageAsync(
                 It.Is<CloudQueueMessage>(m =>
-                    Request.Parser.ParseFrom(m.AsBytes).Method == httpMethod),
+                    JsonConvert.DeserializeObject<Request>(m.AsString).Method == httpMethod),
                 It.IsAny<TimeSpan?>(), It.IsAny<TimeSpan?>(), It.IsAny<QueueRequestOptions>(), It.IsAny<OperationContext>()));
         }
 
@@ -212,7 +213,7 @@ namespace Rehttp.UnitTests
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(x => x.AddMessageAsync(
                 It.Is<CloudQueueMessage>(m =>
-                    Request.Parser.ParseFrom(m.AsBytes).Content == ByteString.CopyFrom(bytes)),
+                    JsonConvert.DeserializeObject<Request>(m.AsString).Content.SequenceEqual(bytes)),
                 It.IsAny<TimeSpan?>(), It.IsAny<TimeSpan?>(), It.IsAny<QueueRequestOptions>(), It.IsAny<OperationContext>()));
         }
     }
