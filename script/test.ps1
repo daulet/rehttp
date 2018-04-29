@@ -17,8 +17,8 @@ Start-AzureFunction 7073 -workingDir "test\rehttp.Mocks\bin\Debug\netstandard2.0
 
 dotnet test .\test\rehttp.IntegrationTests\rehttp.IntegrationTests.csproj --no-build
 
-Stop-Process (Get-Process func).Id
-
 if ($LastExitCode -ne 0) {
     return $LastExitCode
 }
+
+Stop-Process (Get-Process func).Id
