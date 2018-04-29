@@ -157,7 +157,7 @@ namespace Rehttp.UnitTests
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(x => x.AddMessageAsync(
                 It.Is<CloudQueueMessage>(m =>
-                    JsonConvert.DeserializeObject<Request>(m.AsString).Destination == targetUrl),
+                    JsonConvert.DeserializeObject<RequestMessage>(m.AsString).Destination == targetUrl),
                 It.IsAny<TimeSpan?>(), It.IsAny<TimeSpan?>(), It.IsAny<QueueRequestOptions>(), It.IsAny<OperationContext>()));
         }
 
@@ -194,7 +194,7 @@ namespace Rehttp.UnitTests
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(x => x.AddMessageAsync(
                 It.Is<CloudQueueMessage>(m =>
-                    JsonConvert.DeserializeObject<Request>(m.AsString).Method == httpMethod),
+                    JsonConvert.DeserializeObject<RequestMessage>(m.AsString).Method == httpMethod),
                 It.IsAny<TimeSpan?>(), It.IsAny<TimeSpan?>(), It.IsAny<QueueRequestOptions>(), It.IsAny<OperationContext>()));
         }
 
@@ -237,7 +237,7 @@ namespace Rehttp.UnitTests
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(x => x.AddMessageAsync(
                 It.Is<CloudQueueMessage>(m =>
-                    JsonConvert.DeserializeObject<Request>(m.AsString).Content.SequenceEqual(bytes)),
+                    JsonConvert.DeserializeObject<RequestMessage>(m.AsString).Content.SequenceEqual(bytes)),
                 It.IsAny<TimeSpan?>(), It.IsAny<TimeSpan?>(), It.IsAny<QueueRequestOptions>(), It.IsAny<OperationContext>()));
         }
 
@@ -275,7 +275,7 @@ namespace Rehttp.UnitTests
             mockHttp.VerifyNoOutstandingExpectation();
             queueMock.Verify(x => x.AddMessageAsync(
                 It.Is<CloudQueueMessage>(m =>
-                    JsonConvert.DeserializeObject<Request>(m.AsString).DelayInSeconds == delayInSeconds),
+                    JsonConvert.DeserializeObject<RequestMessage>(m.AsString).DelayInSeconds == delayInSeconds),
                 It.IsAny<TimeSpan?>(), It.IsAny<TimeSpan?>(), It.IsAny<QueueRequestOptions>(), It.IsAny<OperationContext>()));
         }
     }

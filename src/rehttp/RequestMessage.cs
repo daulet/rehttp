@@ -1,6 +1,6 @@
 ﻿namespace Rehttp
 {
-    public class Request
+    public class RequestMessage
     {
         public string Destination { get; set; }
 

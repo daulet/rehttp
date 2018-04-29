@@ -21,7 +21,7 @@ namespace Rehttp
         public static async Task<IActionResult> RunAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous,
                 "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
-                Route = "{*path}")] HttpRequestMessage request,
+                Route = "{*path}")] HttpRequestMessage httpRequest,
             string path,
             [Inject] Client client,
             [Config("InitialRequestTimeout")] TimeSpan initialRequestTimeout,
@@ -30,19 +30,19 @@ namespace Rehttp
             [Config("MaxRetryDelay")] TimeSpan maxRetryDelay,
             ILogger log)
         {
-            log.LogInformation($"Received request {request.RequestUri}");
+            log.LogInformation($"Received request {httpRequest.RequestUri}");
 
             // remove "/r/" from the path and query part of URL
-            var targetUri = request.RequestUri.PathAndQuery.Substring(3);
+            var targetUri = httpRequest.RequestUri.PathAndQuery.Substring(3);
             if (!Uri.TryCreate(targetUri, UriKind.Absolute, out var uri))
             {
                 return new BadRequestObjectResult($"{targetUri} is not valid absolute Uri");
             }
 
-            var requestMessage = new HttpRequestMessage(request.Method, uri);
-            if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head)
+            var requestMessage = new HttpRequestMessage(httpRequest.Method, uri);
+            if (httpRequest.Method != HttpMethod.Get && httpRequest.Method != HttpMethod.Head)
             {
-                requestMessage.Content = request.Content;
+                requestMessage.Content = httpRequest.Content;
             };
 
             var requestResult = await client.SendAsync(requestMessage, initialRequestTimeout)
@@ -55,18 +55,18 @@ namespace Rehttp
                     return new BadRequestResult();
             }
 
-            var serializableRequest = new Request()
+            var request = new RequestMessage()
             {
                 Destination = targetUri,
-                Method = request.Method.Method,
+                Method = httpRequest.Method.Method,
                 DelayInSeconds = initialRetryDelay.TotalSeconds,
             };
-            if (request.Content != null)
+            if (httpRequest.Content != null)
             {
-                serializableRequest.Content = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                request.Content = await httpRequest.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
             }
 
-            var serializedRequest = JsonConvert.SerializeObject(serializableRequest);
+            var serializedRequest = JsonConvert.SerializeObject(request);
 
             // 48KB is a limit for byte array queue messages
             // https://docs.microsoft.com/en-us/azure/service-bus-messaging/service-bus-azure-and-service-bus-queues-compared-contrasted#capacity-and-quotas

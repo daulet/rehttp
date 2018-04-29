@@ -14,7 +14,7 @@ namespace Rehttp
     {
         [FunctionName("Repeater")]
         public static async Task RunAsync(
-            [QueueTrigger("requests", Connection = "RequestsQueueConnection")] Request message,
+            [QueueTrigger("requests", Connection = "RequestsQueueConnection")] RequestMessage request,
             [Inject] Client client,
             [Config("RequestTimeout")] TimeSpan timeout,
             [Queue("requests", Connection = "RequestsQueueConnection")] CloudQueue queue,
@@ -22,31 +22,31 @@ namespace Rehttp
             ILogger logger)
         {
             var httpRequest = new HttpRequestMessage(
-                new HttpMethod(message.Method), message.Destination)
+                new HttpMethod(request.Method), request.Destination)
             {
-                Content = new ByteArrayContent(message.Content)
+                Content = new ByteArrayContent(request.Content)
             };
 
             var requestResult = await client.SendAsync(httpRequest, timeout);
             switch (requestResult)
             {
                 case RequestResult.Ok:
-                    logger.LogInformation($"Succeeded to replay to {message.Destination}");
+                    logger.LogInformation($"Succeeded to replay to {request.Destination}");
                     return;
                 case RequestResult.Invalid:
-                    logger.LogInformation($"Abandoning invalid request to {message.Destination}");
+                    logger.LogInformation($"Abandoning invalid request to {request.Destination}");
                     return;
             }
 
-            var nextDelay = message.DelayInSeconds * 2;
+            var nextDelay = request.DelayInSeconds * 2;
             if (nextDelay >= maxDelay.TotalSeconds)
             {
-                logger.LogInformation($"Reached max retry delay of {nextDelay}s for {message.Destination}");
+                logger.LogInformation($"Reached max retry delay of {nextDelay}s for {request.Destination}");
                 return;
             }
 
-            message.DelayInSeconds = nextDelay;
-            var serializedRequest = JsonConvert.SerializeObject(message);
+            request.DelayInSeconds = nextDelay;
+            var serializedRequest = JsonConvert.SerializeObject(request);
             var nextMessage = new CloudQueueMessage(serializedRequest);
 
             await queue.AddMessageAsync(nextMessage,
@@ -56,7 +56,7 @@ namespace Rehttp
                     operationContext: null)
                 .ConfigureAwait(false);
 
-            logger.LogInformation($"Postponed request for {nextDelay}s to {message.Destination}");
+            logger.LogInformation($"Postponed request for {nextDelay}s to {request.Destination}");
         }
     }
 }
