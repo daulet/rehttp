@@ -8,8 +8,6 @@ namespace Rehttp.IntegrationTests
     {
         public CloudQueue Queue { get; set; }
 
-        public CloudQueueClient QueueClient { get; set; }
-
         public UniqueQueue()
             : this(Guid.NewGuid().ToString())
         {
@@ -18,8 +16,7 @@ namespace Rehttp.IntegrationTests
         public UniqueQueue(string queueName)
         {
             var storageAccount = CloudStorageAccount.Parse("UseDevelopmentStorage=true");
-            QueueClient = storageAccount.CreateCloudQueueClient();
-            Queue = QueueClient.GetQueueReference(queueName);
+            Queue = storageAccount.CreateCloudQueueClient().GetQueueReference(queueName);
 
             Queue.CreateAsync().Wait();
         }
@@ -27,6 +24,7 @@ namespace Rehttp.IntegrationTests
         public void Dispose()
         {
             Queue.DeleteAsync().Wait();
+            Queue = null;
         }
     }
 }

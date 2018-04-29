@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\rehttp\rehttp.csproj" />
     <ProjectReference Include="..\rehttp.Mocks\rehttp.Mocks.csproj" />
   </ItemGroup>
 

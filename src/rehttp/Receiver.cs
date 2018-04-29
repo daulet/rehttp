@@ -1,3 +1,4 @@
+using Indigo.Functions.Configuration;
 using Indigo.Functions.Injection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -22,8 +23,10 @@ namespace Rehttp
                 "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
                 Route = "{*path}")] HttpRequestMessage request,
             string path,
-            [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] CloudQueue queue,
             [Inject] HttpClient httpClient,
+            [Config("InitialRequestTimeout")] TimeSpan initialRequestTimeout,
+            [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] CloudQueue queue,
+            [Config("InitialRetryDelay")] TimeSpan initialRetryDelay,
             ILogger log)
         {
             log.LogInformation($"Received request {request.RequestUri}");
@@ -44,15 +47,20 @@ namespace Rehttp
                     requestMessage.Content = request.Content;
                 };
 
-                using (var response = await httpClient.SendAsync(requestMessage).ConfigureAwait(false))
+                var requestTask = httpClient.SendAsync(requestMessage);
+                var timeoutTask = Task.Delay(initialRequestTimeout);
+                if (await Task.WhenAny(requestTask, timeoutTask).ConfigureAwait(false) == requestTask)
                 {
-                    responseMessage = $"Received {response.StatusCode} from {uri}";
-
-                    if (response.IsSuccessStatusCode)
+                    using (var response = await requestTask.ConfigureAwait(false))
                     {
-                        log.LogInformation($"Received response: {await response.Content.ReadAsStringAsync().ConfigureAwait(false)}");
+                        responseMessage = $"Received {response.StatusCode} from {uri}";
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            log.LogInformation($"Received response: {content}");
 
-                        return new OkObjectResult(responseMessage);
+                            return new OkObjectResult(responseMessage);
+                        }
                     }
                 }
             }
@@ -89,7 +97,7 @@ namespace Rehttp
             var message = new CloudQueueMessage(serializedRequest);
             await queue.AddMessageAsync(message,
                     timeToLive: TimeSpan.FromDays(2),
-                    initialVisibilityDelay: TimeSpan.FromMinutes(5),
+                    initialVisibilityDelay: initialRetryDelay,
                     options: queue.ServiceClient.DefaultRequestOptions,
                     operationContext: null)
                 .ConfigureAwait(false);

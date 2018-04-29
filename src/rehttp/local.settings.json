@@ -1,0 +1,10 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "AzureWebJobsDashboard": "UseDevelopmentStorage=true",
+    "RequestsQueueConnection": "UseDevelopmentStorage=true",
+    "InitialRetryDelay": "0:00:00:01",
+    "InitialRequestTimeout":  "0:00:00:0.5"
+  }
+}

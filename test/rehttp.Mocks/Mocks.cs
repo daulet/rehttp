@@ -25,11 +25,12 @@ namespace Rehttp.Mocks
             log.LogInformation($"Received {nameof(OkPathRequestAsync)} request");
 
             await invocations.AddAsync(new Invocation()
-            {
-                Content = await request.Content.ReadAsStringAsync(),
-                Method = request.Method,
-                TargetUri = request.RequestUri,
-            });
+                    {
+                        Content = await request.Content.ReadAsStringAsync(),
+                        Method = request.Method,
+                        TargetUri = request.RequestUri,
+                    })
+                .ConfigureAwait(false);
 
             return new OkResult();
         }
@@ -46,30 +47,31 @@ namespace Rehttp.Mocks
             log.LogInformation($"Received {nameof(OkPathRequestAsync)} request");
 
             await invocations.AddAsync(new Invocation()
-            {
-                Content = await request.Content.ReadAsStringAsync(),
-                Method = request.Method,
-                TargetUri = request.RequestUri,
-            });
+                    {
+                        Content = await request.Content.ReadAsStringAsync(),
+                        Method = request.Method,
+                        TargetUri = request.RequestUri,
+                    })
+                .ConfigureAwait(false);
 
             return new OkResult();
         }
 
         [FunctionName("Slow")]
         public static async Task<IActionResult> SlowAsync(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "slow")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "slow")] HttpRequest request,
             TraceWriter log)
         {
             log.Info($"Received {nameof(SlowAsync)} request");
 
-            await Task.Delay(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
 
             return new OkResult();
         }
 
         [FunctionName("InternalError")]
         public static IActionResult InternalError(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "error")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "error")] HttpRequestMessage request,
             TraceWriter log)
         {
             log.Info($"Received {nameof(InternalError)} request");

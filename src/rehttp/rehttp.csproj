@@ -6,6 +6,7 @@
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Indigo.Functions.Configuration" Version="0.1.0-prerelease" />
     <PackageReference Include="Indigo.Functions.Injection" Version="0.1.0-prerelease" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.13" />
   </ItemGroup>

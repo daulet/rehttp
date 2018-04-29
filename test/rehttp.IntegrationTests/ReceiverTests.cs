@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.WindowsAzure.Storage;
+using Newtonsoft.Json;
 using Rehttp.Mocks;
 using System;
 using System.Net.Http;
@@ -10,6 +11,8 @@ namespace Rehttp.IntegrationTests
     public class ReceiverTests
     {
         private static readonly HttpClient Client = new HttpClient();
+        private static readonly CloudStorageAccount StorageAccount = CloudStorageAccount.Parse("UseDevelopmentStorage=true");
+        private const string REQUESTS_QUEUE = "requests";
 
         [Theory]
         [InlineData("DELETE")]
@@ -127,6 +130,31 @@ namespace Rehttp.IntegrationTests
                 var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
                 Assert.Equal(content, invocation.Content);
             }
+        }
+
+        [Theory]
+        [InlineData("DELETE")]
+        [InlineData("GET")]
+        [InlineData("HEAD")]
+        [InlineData("OPTIONS")]
+        [InlineData("POST")]
+        [InlineData("PUT")]
+        [InlineData("TRACE")]
+        public async Task RunAsync_TargetIsSlow_RequestIsQueued(string httpMethod)
+        {
+            var method = new HttpMethod(httpMethod);
+
+            await Client.SendAsync(
+                new HttpRequestMessage(method,
+                    $"http://localhost:7072/r/http://localhost:7073/test/slow")
+            );
+
+            var message = await StorageAccount
+                .CreateCloudQueueClient()
+                .GetQueueReference(REQUESTS_QUEUE)
+                .GetMessageAsync()
+                .ConfigureAwait(false);
+            Assert.NotNull(message);
         }
     }
 }

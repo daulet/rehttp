@@ -37,8 +37,10 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     targetUrl,
-                    queueMock.Object,
                     mockHttp.ToHttpClient(),
+                    TimeSpan.FromMilliseconds(1),
+                    queueMock.Object,
+                    TimeSpan.FromMilliseconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -72,8 +74,10 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     targetUrl,
-                    queueMock.Object,
                     mockHttp.ToHttpClient(),
+                    TimeSpan.FromMilliseconds(1),
+                    queueMock.Object,
+                    TimeSpan.FromMilliseconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -103,8 +107,10 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     targetUrl,
-                    queueMock.Object,
                     mockHttp.ToHttpClient(),
+                    TimeSpan.FromMilliseconds(1),
+                    queueMock.Object,
+                    TimeSpan.FromMilliseconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -137,8 +143,10 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     "http://endpoint.io/path/to/media",
-                    queueMock.Object,
                     mockHttp.ToHttpClient(),
+                    TimeSpan.FromMilliseconds(1),
+                    queueMock.Object,
+                    TimeSpan.FromMilliseconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -171,8 +179,10 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     targetUrl,
-                    queueMock.Object,
                     mockHttp.ToHttpClient(),
+                    TimeSpan.FromMilliseconds(1),
+                    queueMock.Object,
+                    TimeSpan.FromMilliseconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -211,8 +221,10 @@ namespace Rehttp.UnitTests
                         Content = new ByteArrayContent(bytes),
                     },
                     targetUrl,
-                    queueMock.Object,
                     mockHttp.ToHttpClient(),
+                    TimeSpan.FromMilliseconds(1),
+                    queueMock.Object,
+                    TimeSpan.FromMilliseconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
