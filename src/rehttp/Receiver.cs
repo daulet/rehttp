@@ -28,18 +28,29 @@ namespace Rehttp
             [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] CloudQueue queue,
             [Config("InitialRetryDelay")] TimeSpan initialRetryDelay,
             [Config("MaxRetryDelay")] TimeSpan maxRetryDelay,
-            ILogger log)
+            ILogger logger)
         {
-            log.LogInformation($"Received request {httpRequest.RequestUri}");
+            logger.LogInformation($"Received request {httpRequest.RequestUri}");
 
             // remove "/r/" from the path and query part of URL
             var targetUri = httpRequest.RequestUri.PathAndQuery.Substring(3);
             if (!Uri.TryCreate(targetUri, UriKind.Absolute, out var uri))
             {
-                return new BadRequestObjectResult($"{targetUri} is not valid absolute Uri");
+                logger.LogInformation($"Rejecting request to {targetUri} because it is not valid absolute Uri");
+                return new BadRequestObjectResult($"Unsupported request to {uri}");
             }
 
-            var requestMessage = new HttpRequestMessage(httpRequest.Method, uri);
+            HttpRequestMessage requestMessage;
+            try
+            {
+                requestMessage = new HttpRequestMessage(httpRequest.Method, uri);
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogInformation($"Rejecting request to {targetUri} due to {ex.Message}");
+                return new BadRequestObjectResult($"Unsupported request to {uri}");
+            }
+
             if (httpRequest.Method != HttpMethod.Get && httpRequest.Method != HttpMethod.Head)
             {
                 requestMessage.Content = httpRequest.Content;
@@ -50,8 +61,10 @@ namespace Rehttp
             switch (requestResult)
             {
                 case RequestResult.Ok:
+                    logger.LogInformation($"Succeeded to relay to {uri}");
                     return new OkResult();
                 case RequestResult.Invalid:
+                    logger.LogInformation($"Rejecting invalid request to {uri}");
                     return new BadRequestResult();
             }
 
@@ -83,7 +96,8 @@ namespace Rehttp
                     options: queue.ServiceClient.DefaultRequestOptions,
                     operationContext: null)
                 .ConfigureAwait(false);
-            
+
+            logger.LogInformation($"Postponed request for {initialRetryDelay.TotalSeconds}s to {uri}");
             return new OkResult();
         }
     }

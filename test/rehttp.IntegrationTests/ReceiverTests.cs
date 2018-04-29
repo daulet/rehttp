@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Rehttp.Mocks;
 using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Xunit;
@@ -13,6 +14,44 @@ namespace Rehttp.IntegrationTests
         private static readonly HttpClient Client = new HttpClient();
         private static readonly CloudStorageAccount StorageAccount = CloudStorageAccount.Parse("UseDevelopmentStorage=true");
         private const string REQUESTS_QUEUE = "requests";
+
+        [Theory]
+        [InlineData("DELETE")]
+        [InlineData("GET")]
+        [InlineData("HEAD")]
+        [InlineData("OPTIONS")]
+        [InlineData("POST")]
+        [InlineData("PUT")]
+        [InlineData("TRACE")]
+        public async Task RunAsync_InvalidAbsoluteUri_RequestRejected(string httpMethod)
+        {
+            var method = new HttpMethod(httpMethod);
+            var response = await Client.SendAsync(
+                new HttpRequestMessage(method,
+                    $"http://localhost:7072/r/domain")
+            );
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Theory]
+        [InlineData("DELETE")]
+        [InlineData("GET")]
+        [InlineData("HEAD")]
+        [InlineData("OPTIONS")]
+        [InlineData("POST")]
+        [InlineData("PUT")]
+        [InlineData("TRACE")]
+        public async Task RunAsync_UnsupportedProtocol_RequestRejected(string httpMethod)
+        {
+            var method = new HttpMethod(httpMethod);
+            var response = await Client.SendAsync(
+                new HttpRequestMessage(method,
+                    $"http://localhost:7072/r/ftp://test.com")
+            );
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
 
         [Theory]
         [InlineData("DELETE")]
