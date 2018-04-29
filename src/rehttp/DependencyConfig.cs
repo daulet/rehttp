@@ -11,6 +11,7 @@ namespace Rehttp
             get
             {
                 var container = new UnityContainer();
+                container.RegisterType<Client>();
                 container.RegisterInstance(new HttpClient());
                 return container;
             }

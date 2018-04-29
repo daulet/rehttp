@@ -5,6 +5,8 @@
     "AzureWebJobsDashboard": "UseDevelopmentStorage=true",
     "RequestsQueueConnection": "UseDevelopmentStorage=true",
     "InitialRetryDelay": "0:00:00:01",
-    "InitialRequestTimeout":  "0:00:00:0.5"
+    "MaxRetryDelay":  "1:00:00",
+    "InitialRequestTimeout": "0:00:00:0.5",
+    "RequestTimeout": "0:00:30"
   }
 }

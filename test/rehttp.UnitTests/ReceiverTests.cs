@@ -37,10 +37,11 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     targetUrl,
-                    mockHttp.ToHttpClient(),
+                    new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
                     TimeSpan.FromMilliseconds(1),
+                    TimeSpan.FromSeconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -74,10 +75,11 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     targetUrl,
-                    mockHttp.ToHttpClient(),
+                    new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
                     TimeSpan.FromMilliseconds(1),
+                    TimeSpan.FromSeconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -107,10 +109,11 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     targetUrl,
-                    mockHttp.ToHttpClient(),
+                    new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
                     TimeSpan.FromMilliseconds(1),
+                    TimeSpan.FromSeconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -143,10 +146,11 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     "http://endpoint.io/path/to/media",
-                    mockHttp.ToHttpClient(),
+                    new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
                     TimeSpan.FromMilliseconds(1),
+                    TimeSpan.FromSeconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -179,10 +183,11 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     targetUrl,
-                    mockHttp.ToHttpClient(),
+                    new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
                     TimeSpan.FromMilliseconds(1),
+                    TimeSpan.FromSeconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -221,10 +226,11 @@ namespace Rehttp.UnitTests
                         Content = new ByteArrayContent(bytes),
                     },
                     targetUrl,
-                    mockHttp.ToHttpClient(),
+                    new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
                     TimeSpan.FromMilliseconds(1),
+                    TimeSpan.FromSeconds(1),
                     Mock.Of<ILogger>())
                 .ConfigureAwait(false);
 
@@ -232,6 +238,44 @@ namespace Rehttp.UnitTests
             queueMock.Verify(x => x.AddMessageAsync(
                 It.Is<CloudQueueMessage>(m =>
                     JsonConvert.DeserializeObject<Request>(m.AsString).Content.SequenceEqual(bytes)),
+                It.IsAny<TimeSpan?>(), It.IsAny<TimeSpan?>(), It.IsAny<QueueRequestOptions>(), It.IsAny<OperationContext>()));
+        }
+
+        [Theory]
+        [InlineData("DELETE")]
+        [InlineData("GET")]
+        [InlineData("HEAD")]
+        [InlineData("OPTIONS")]
+        [InlineData("POST")]
+        [InlineData("PUT")]
+        [InlineData("TRACE")]
+        public async Task RunAsync_FailureStatusCode_CorrectDelayQueued(string httpMethod)
+        {
+            var method = new HttpMethod(httpMethod);
+            var targetUrl = "http://endpoint.io/path/to/media";
+            var delayInSeconds = 123;
+
+            var mockHttp = new MockHttpMessageHandler();
+            mockHttp.Expect(method, targetUrl)
+                    .Respond(HttpStatusCode.InternalServerError);
+
+            var queueMock = new Mock<CloudQueue>(MockBehavior.Loose, new Uri("http://localhost"));
+
+            await Receiver.RunAsync(
+                    new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
+                    targetUrl,
+                    new Client(mockHttp.ToHttpClient()),
+                    TimeSpan.FromMilliseconds(1),
+                    queueMock.Object,
+                    TimeSpan.FromSeconds(delayInSeconds),
+                    TimeSpan.FromSeconds(1),
+                    Mock.Of<ILogger>())
+                .ConfigureAwait(false);
+
+            mockHttp.VerifyNoOutstandingExpectation();
+            queueMock.Verify(x => x.AddMessageAsync(
+                It.Is<CloudQueueMessage>(m =>
+                    JsonConvert.DeserializeObject<Request>(m.AsString).DelayInSeconds == delayInSeconds),
                 It.IsAny<TimeSpan?>(), It.IsAny<TimeSpan?>(), It.IsAny<QueueRequestOptions>(), It.IsAny<OperationContext>()));
         }
     }

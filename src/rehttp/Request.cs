@@ -7,5 +7,7 @@
         public string Method { get; set; }
 
         public byte[] Content { get; set; }
+
+        public double DelayInSeconds { get; set; }
     }
 }

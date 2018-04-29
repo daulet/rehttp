@@ -19,14 +19,15 @@ namespace Rehttp
 
         [FunctionName("Receiver")]
         public static async Task<IActionResult> RunAsync(
-            [HttpTrigger(AuthorizationLevel.Function,
+            [HttpTrigger(AuthorizationLevel.Anonymous,
                 "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
                 Route = "{*path}")] HttpRequestMessage request,
             string path,
-            [Inject] HttpClient httpClient,
+            [Inject] Client client,
             [Config("InitialRequestTimeout")] TimeSpan initialRequestTimeout,
             [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] CloudQueue queue,
             [Config("InitialRetryDelay")] TimeSpan initialRetryDelay,
+            [Config("MaxRetryDelay")] TimeSpan maxRetryDelay,
             ILogger log)
         {
             log.LogInformation($"Received request {request.RequestUri}");
@@ -38,46 +39,27 @@ namespace Rehttp
                 return new BadRequestObjectResult($"{targetUri} is not valid absolute Uri");
             }
 
-            string responseMessage = null;
-            try
+            var requestMessage = new HttpRequestMessage(request.Method, uri);
+            if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head)
             {
-                var requestMessage = new HttpRequestMessage(request.Method, uri);
-                if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head)
-                {
-                    requestMessage.Content = request.Content;
-                };
+                requestMessage.Content = request.Content;
+            };
 
-                var requestTask = httpClient.SendAsync(requestMessage);
-                var timeoutTask = Task.Delay(initialRequestTimeout);
-                if (await Task.WhenAny(requestTask, timeoutTask).ConfigureAwait(false) == requestTask)
-                {
-                    using (var response = await requestTask.ConfigureAwait(false))
-                    {
-                        responseMessage = $"Received {response.StatusCode} from {uri}";
-                        if (response.IsSuccessStatusCode)
-                        {
-                            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            log.LogInformation($"Received response: {content}");
-
-                            return new OkObjectResult(responseMessage);
-                        }
-                    }
-                }
-            }
-            catch (ArgumentException ex)
+            var requestResult = await client.SendAsync(requestMessage, initialRequestTimeout)
+                .ConfigureAwait(false);
+            switch (requestResult)
             {
-                return new BadRequestObjectResult(ex.Message);
-            }
-            catch (HttpRequestException ex)
-            {
-                log.LogInformation($"Request exception: {ex}");
-                responseMessage = $"Received {ex.Message} from {uri}";
+                case RequestResult.Ok:
+                    return new OkResult();
+                case RequestResult.Invalid:
+                    return new BadRequestResult();
             }
 
             var serializableRequest = new Request()
             {
                 Destination = targetUri,
                 Method = request.Method.Method,
+                DelayInSeconds = initialRetryDelay.TotalSeconds,
             };
             if (request.Content != null)
             {
@@ -96,13 +78,13 @@ namespace Rehttp
 
             var message = new CloudQueueMessage(serializedRequest);
             await queue.AddMessageAsync(message,
-                    timeToLive: TimeSpan.FromDays(2),
+                    timeToLive: maxRetryDelay,
                     initialVisibilityDelay: initialRetryDelay,
                     options: queue.ServiceClient.DefaultRequestOptions,
                     operationContext: null)
                 .ConfigureAwait(false);
             
-            return new OkObjectResult(responseMessage);
+            return new OkResult();
         }
     }
 }
