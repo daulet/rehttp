@@ -37,7 +37,7 @@ namespace Rehttp.UnitTests
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
                     new Client(mockHttp.ToHttpClient()),
-                    TimeSpan.FromMilliseconds(1),
+                    TimeSpan.FromSeconds(1),
                     queueMock.Object,
                     TimeSpan.FromMilliseconds(1),
                     TimeSpan.FromSeconds(1),
