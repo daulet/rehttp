@@ -1,9 +1,12 @@
+using Indigo.Functions.Redis;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using StackExchange.Redis;
 using System;
 using System.IO;
 using System.Net.Http;
@@ -13,6 +16,43 @@ namespace Rehttp.Mocks
 {
     public static class Mocks
     {
+        [FunctionName("UniversalMock")]
+        public static async Task<IActionResult> UniversalMockAsync(
+            [HttpTrigger(AuthorizationLevel.Function,
+                "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
+                Route = "universal/{*path}")] HttpRequestMessage request,
+            string path,
+            [Redis] IDatabase database,
+            ILogger log)
+        {
+            log.LogInformation($"Received {nameof(OkPathRequestAsync)} request");
+
+            var invocation = new Invocation()
+            {
+                Content = await request.Content.ReadAsStringAsync(),
+                Method = request.Method,
+                TargetUri = request.RequestUri,
+            };
+            await database.ListRightPushAsync($"response/{path}", JsonConvert.SerializeObject(invocation));
+
+            var recordedResponse = await database.ListLeftPopAsync(path);
+            if (string.IsNullOrEmpty(recordedResponse))
+            {
+                throw new IOException($"No prerecorded responses left for key: {path}");
+            }
+
+            var response = JsonConvert.DeserializeObject<Response>(recordedResponse);
+            if (response.DelayInMilliseconds.HasValue)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(response.DelayInMilliseconds.Value));
+            }
+
+            return new ObjectResult(recordedResponse)
+            {
+                StatusCode = (int) response.StatusCode
+            };
+        }
+
         [FunctionName("OkPathRequest")]
         public static async Task<IActionResult> OkPathRequestAsync(
             [HttpTrigger(AuthorizationLevel.Function,

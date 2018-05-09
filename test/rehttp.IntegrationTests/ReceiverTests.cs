@@ -1,7 +1,9 @@
 ﻿using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using Rehttp.Mocks;
+using StackExchange.Redis;
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -12,6 +14,7 @@ namespace Rehttp.IntegrationTests
     public class ReceiverTests
     {
         private static readonly HttpClient Client = new HttpClient();
+        private static readonly IDatabase Database = ConnectionMultiplexer.Connect("localhost").GetDatabase();
         private static readonly CloudStorageAccount StorageAccount = CloudStorageAccount.Parse("UseDevelopmentStorage=true");
         private const string REQUESTS_QUEUE = "requests";
 
@@ -61,26 +64,62 @@ namespace Rehttp.IntegrationTests
         [InlineData("POST")]
         [InlineData("PUT")]
         [InlineData("TRACE")]
+        public async Task RunAsync_TargetIsAvailable_ExactlyOneRequestMadeAsync(string httpMethod)
+        {
+            // Arrange
+            var method = new HttpMethod(httpMethod);
+            var path = Path.GetRandomFileName();
+
+            await Database.ListRightPushAsync(path, JsonConvert.SerializeObject(
+                new Response()
+                {
+                    StatusCode = HttpStatusCode.Accepted
+                }));
+
+            // Act
+            await Client.SendAsync(
+                new HttpRequestMessage(method,
+                    $"http://localhost:7072/r/http://localhost:7073/test/universal/{path}")
+            );
+
+            // Assert
+            var requests = await Database.ListLengthAsync($"response/{path}");
+            Assert.Equal(1, requests);
+        }
+
+        [Theory]
+        [InlineData("DELETE")]
+        [InlineData("GET")]
+        [InlineData("HEAD")]
+        [InlineData("OPTIONS")]
+        [InlineData("POST")]
+        [InlineData("PUT")]
+        [InlineData("TRACE")]
         public async Task RunAsync_TargetIsAvailable_CorrectUriPathSentAsync(string httpMethod)
         {
-            using (var uniqueQueue = new UniqueQueue("mockpaths"))
-            {
-                var method = new HttpMethod(httpMethod);
-                var path1 = Guid.NewGuid();
-                var path2 = Guid.NewGuid();
-                var path3 = Guid.NewGuid();
+            // Arrange
+            var key = Path.GetRandomFileName();
+            await Database.ListRightPushAsync(key, JsonConvert.SerializeObject(
+                new Response()
+                {
+                    StatusCode = HttpStatusCode.Accepted
+                }));
 
-                await Client.SendAsync(
-                    new HttpRequestMessage(method,
-                        $"http://localhost:7072/r/http://localhost:7073/test/ok/long/{path1}/{path2}/{path3}")
-                );
+            var method = new HttpMethod(httpMethod);
+            var path = $"{Guid.NewGuid()}/{Guid.NewGuid()}/{Guid.NewGuid()}";
 
-                var message = await uniqueQueue.Queue.GetMessageAsync();
-                Assert.NotNull(message);
+            // Act
+            await Client.SendAsync(
+                new HttpRequestMessage(method,
+                    $"http://localhost:7072/r/http://localhost:7073/test/universal/{path}")
+            );
 
-                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
-                Assert.Equal($"http://localhost:7073/test/ok/long/{path1}/{path2}/{path3}", invocation.TargetUri.ToString());
-            }
+            // Assert
+            string actualRequestAsString = await Database.ListLeftPopAsync($"response/{path}");
+            Assert.NotNull(actualRequestAsString);
+
+            var invocation = JsonConvert.DeserializeObject<Invocation>(actualRequestAsString);
+            Assert.Equal($"http://localhost:7073/test/universal/{path}", invocation.TargetUri.ToString());
         }
 
         [Theory]
