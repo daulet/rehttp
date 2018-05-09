@@ -3,7 +3,7 @@ using System.Net.Http;
 
 namespace Rehttp.Mocks
 {
-    public class Invocation
+    public class Request
     {
         public string Content { get; set; }
 

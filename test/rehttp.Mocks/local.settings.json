@@ -3,7 +3,6 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "AzureWebJobsDashboard": "UseDevelopmentStorage=true",
-    "InvocationQueue": "UseDevelopmentStorage=true",
     "RedisConfigurationOptions": "localhost"
   }
 }

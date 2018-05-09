@@ -15,8 +15,6 @@ namespace Rehttp.IntegrationTests
     {
         private static readonly HttpClient Client = new HttpClient();
         private static readonly IDatabase Database = ConnectionMultiplexer.Connect("localhost").GetDatabase();
-        private static readonly CloudStorageAccount StorageAccount = CloudStorageAccount.Parse("UseDevelopmentStorage=true");
-        private const string REQUESTS_QUEUE = "requests";
 
         [Theory]
         [InlineData("DELETE")]
@@ -68,7 +66,7 @@ namespace Rehttp.IntegrationTests
         {
             // Arrange
             var method = new HttpMethod(httpMethod);
-            var path = Path.GetRandomFileName();
+            var path = $"{nameof(RunAsync_TargetIsAvailable_ExactlyOneRequestMadeAsync)}/{Path.GetRandomFileName()}";
 
             await Database.ListRightPushAsync(path, JsonConvert.SerializeObject(
                 new Response()
@@ -79,7 +77,7 @@ namespace Rehttp.IntegrationTests
             // Act
             await Client.SendAsync(
                 new HttpRequestMessage(method,
-                    $"http://localhost:7072/r/http://localhost:7073/test/universal/{path}")
+                    $"http://localhost:7072/r/http://localhost:7073/test/{path}")
             );
 
             // Assert
@@ -99,7 +97,7 @@ namespace Rehttp.IntegrationTests
         {
             // Arrange
             var method = new HttpMethod(httpMethod);
-            var path = $"{Guid.NewGuid()}/{Guid.NewGuid()}/{Guid.NewGuid()}";
+            var path = $"{nameof(RunAsync_TargetIsAvailable_CorrectUriPathSentAsync)}/{Guid.NewGuid()}/{Guid.NewGuid()}/{Guid.NewGuid()}";
 
             await Database.ListRightPushAsync(path, JsonConvert.SerializeObject(
                 new Response()
@@ -110,12 +108,12 @@ namespace Rehttp.IntegrationTests
             // Act
             await Client.SendAsync(
                 new HttpRequestMessage(method,
-                    $"http://localhost:7072/r/http://localhost:7073/test/universal/{path}")
+                    $"http://localhost:7072/r/http://localhost:7073/test/{path}")
             );
 
             // Assert
-            var invocation = JsonConvert.DeserializeObject<Invocation>(await Database.ListLeftPopAsync($"response/{path}"));
-            Assert.Equal($"http://localhost:7073/test/universal/{path}", invocation.TargetUri.ToString());
+            var request = JsonConvert.DeserializeObject<Request>(await Database.ListLeftPopAsync($"response/{path}"));
+            Assert.Equal($"http://localhost:7073/test/{path}", request.TargetUri.ToString());
         }
 
         [Theory]
@@ -130,7 +128,7 @@ namespace Rehttp.IntegrationTests
         {
             // Arrange
             var method = new HttpMethod(httpMethod);
-            var path = Path.GetRandomFileName();
+            var path = $"{nameof(RunAsync_TargetIsAvailable_CorrectUriQuerySentAsync)}/{Path.GetRandomFileName()}";
             var param1 = Guid.NewGuid();
             var param2 = Guid.NewGuid();
 
@@ -143,12 +141,12 @@ namespace Rehttp.IntegrationTests
             // Act
             await Client.SendAsync(
                 new HttpRequestMessage(method,
-                    $"http://localhost:7072/r/http://localhost:7073/test/universal/{path}?param1={param1}&param2={param2}")
+                    $"http://localhost:7072/r/http://localhost:7073/test/{path}?param1={param1}&param2={param2}")
             );
 
             // Assert
-            var invocation = JsonConvert.DeserializeObject<Invocation>(await Database.ListLeftPopAsync($"response/{path}"));
-            Assert.Equal($"http://localhost:7073/test/universal/{path}?param1={param1}&param2={param2}", invocation.TargetUri.ToString());
+            var request = JsonConvert.DeserializeObject<Request>(await Database.ListLeftPopAsync($"response/{path}"));
+            Assert.Equal($"http://localhost:7073/test/{path}?param1={param1}&param2={param2}", request.TargetUri.ToString());
         }
 
         [Theory]
@@ -163,7 +161,7 @@ namespace Rehttp.IntegrationTests
         {
             // Arrange
             var method = new HttpMethod(httpMethod);
-            var path = Path.GetRandomFileName();
+            var path = $"{nameof(RunAsync_TargetIsAvailable_CorrectMethodSentAsync)}/{Path.GetRandomFileName()}";
 
             await Database.ListRightPushAsync(path, JsonConvert.SerializeObject(
                 new Response()
@@ -174,12 +172,12 @@ namespace Rehttp.IntegrationTests
             // Act
             await Client.SendAsync(
                 new HttpRequestMessage(method,
-                    $"http://localhost:7072/r/http://localhost:7073/test/universal/{path}")
+                    $"http://localhost:7072/r/http://localhost:7073/test/{path}")
             );
 
             // Assert
-            var invocation = JsonConvert.DeserializeObject<Invocation>(await Database.ListLeftPopAsync($"response/{path}"));
-            Assert.Equal(method, invocation.Method);
+            var request = JsonConvert.DeserializeObject<Request>(await Database.ListLeftPopAsync($"response/{path}"));
+            Assert.Equal(method, request.Method);
         }
 
         [Theory]
@@ -190,51 +188,29 @@ namespace Rehttp.IntegrationTests
         [InlineData("TRACE")]
         public async Task RunAsync_TargetIsAvailable_CorrectContentSentAsync(string httpMethod)
         {
-            using (var uniqueQueue = new UniqueQueue())
-            {
-                var method = new HttpMethod(httpMethod);
-                var content = Guid.NewGuid().ToString();
-                var queueName = uniqueQueue.Queue.Name;
-
-                await Client.SendAsync(
-                    new HttpRequestMessage(method,
-                        $"http://localhost:7072/r/http://localhost:7073/test/ok/{queueName}")
-                    {
-                        Content = new StringContent(content),
-                    }
-                );
-
-                var message = await uniqueQueue.Queue.GetMessageAsync();
-                Assert.NotNull(message);
-
-                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
-                Assert.Equal(content, invocation.Content);
-            }
-        }
-
-        [Theory]
-        [InlineData("DELETE")]
-        [InlineData("GET")]
-        [InlineData("HEAD")]
-        [InlineData("OPTIONS")]
-        [InlineData("POST")]
-        [InlineData("PUT")]
-        [InlineData("TRACE")]
-        public async Task RunAsync_TargetIsSlow_RequestIsQueued(string httpMethod)
-        {
+            // Arrange
             var method = new HttpMethod(httpMethod);
+            var path = $"{nameof(RunAsync_TargetIsAvailable_CorrectContentSentAsync)}/{Path.GetRandomFileName()}";
+            var content = Guid.NewGuid().ToString();
 
+            await Database.ListRightPushAsync(path, JsonConvert.SerializeObject(
+                new Response()
+                {
+                    StatusCode = HttpStatusCode.Accepted
+                }));
+
+            // Act
             await Client.SendAsync(
                 new HttpRequestMessage(method,
-                    $"http://localhost:7072/r/http://localhost:7073/test/slow")
+                    $"http://localhost:7072/r/http://localhost:7073/test/{path}")
+                {
+                    Content = new StringContent(content),
+                }
             );
 
-            var message = await StorageAccount
-                .CreateCloudQueueClient()
-                .GetQueueReference(REQUESTS_QUEUE)
-                .GetMessageAsync()
-                .ConfigureAwait(false);
-            Assert.NotNull(message);
+            // Assert
+            var request = JsonConvert.DeserializeObject<Request>(await Database.ListLeftPopAsync($"response/{path}"));
+            Assert.Equal(content, request.Content);
         }
     }
 }
