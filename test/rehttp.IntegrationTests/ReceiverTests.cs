@@ -161,22 +161,25 @@ namespace Rehttp.IntegrationTests
         [InlineData("TRACE")]
         public async Task RunAsync_TargetIsAvailable_CorrectMethodSentAsync(string httpMethod)
         {
-            using (var uniqueQueue = new UniqueQueue())
-            {
-                var method = new HttpMethod(httpMethod);
-                var queueName = uniqueQueue.Queue.Name;
+            // Arrange
+            var method = new HttpMethod(httpMethod);
+            var path = Path.GetRandomFileName();
 
-                await Client.SendAsync(
-                    new HttpRequestMessage(method,
-                        $"http://localhost:7072/r/http://localhost:7073/test/ok/{queueName}")
-                );
+            await Database.ListRightPushAsync(path, JsonConvert.SerializeObject(
+                new Response()
+                {
+                    StatusCode = HttpStatusCode.Accepted
+                }));
 
-                var message = await uniqueQueue.Queue.GetMessageAsync();
-                Assert.NotNull(message);
+            // Act
+            await Client.SendAsync(
+                new HttpRequestMessage(method,
+                    $"http://localhost:7072/r/http://localhost:7073/test/universal/{path}")
+            );
 
-                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
-                Assert.Equal(method, invocation.Method);
-            }
+            // Assert
+            var invocation = JsonConvert.DeserializeObject<Invocation>(await Database.ListLeftPopAsync($"response/{path}"));
+            Assert.Equal(method, invocation.Method);
         }
 
         [Theory]
