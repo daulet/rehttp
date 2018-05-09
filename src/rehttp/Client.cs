@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -7,10 +8,12 @@ namespace Rehttp
     public class Client
     {
         private readonly HttpClient _httpClient;
+        private readonly ILogger _logger;
 
-        public Client(HttpClient httpClient)
+        public Client(HttpClient httpClient, ILogger logger)
         {
             _httpClient = httpClient;
+            _logger = logger;
         }
 
         public async Task<RequestResult> SendAsync(HttpRequestMessage requestMessage, TimeSpan timeout)
@@ -25,6 +28,9 @@ namespace Rehttp
                     {
                         if (response.IsSuccessStatusCode)
                         {
+                            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            _logger.LogInformation($"Received response: {content}");
+
                             return RequestResult.Ok;
                         }
                     }
@@ -34,8 +40,10 @@ namespace Rehttp
             {
                 return RequestResult.Invalid;
             }
-            catch (HttpRequestException)
-            { }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogInformation($"Request exception: {ex}");
+            }
 
             return RequestResult.Retry;
         }
