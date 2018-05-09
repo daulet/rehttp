@@ -22,7 +22,6 @@ namespace Rehttp
             [HttpTrigger(AuthorizationLevel.Anonymous,
                 "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE",
                 Route = "{*path}")] HttpRequestMessage httpRequest,
-            string path,
             [Inject] Client client,
             [Config("InitialRequestTimeout")] TimeSpan initialRequestTimeout,
             [Queue(queueName: "requests", Connection = "RequestsQueueConnection")] CloudQueue queue,

@@ -36,7 +36,6 @@ namespace Rehttp.UnitTests
 
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                    targetUrl,
                     new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
@@ -74,7 +73,6 @@ namespace Rehttp.UnitTests
 
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                    targetUrl,
                     new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
@@ -108,7 +106,6 @@ namespace Rehttp.UnitTests
 
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                    targetUrl,
                     new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
@@ -145,7 +142,6 @@ namespace Rehttp.UnitTests
 
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                    "http://endpoint.io/path/to/media",
                     new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
@@ -182,7 +178,6 @@ namespace Rehttp.UnitTests
 
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                    targetUrl,
                     new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
@@ -225,7 +220,6 @@ namespace Rehttp.UnitTests
                     {
                         Content = new ByteArrayContent(bytes),
                     },
-                    targetUrl,
                     new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
@@ -263,7 +257,6 @@ namespace Rehttp.UnitTests
 
             await Receiver.RunAsync(
                     new HttpRequestMessage(method, $"https://rehttp.me/r/{targetUrl}"),
-                    targetUrl,
                     new Client(mockHttp.ToHttpClient()),
                     TimeSpan.FromMilliseconds(1),
                     queueMock.Object,
