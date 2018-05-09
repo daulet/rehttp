@@ -98,15 +98,14 @@ namespace Rehttp.IntegrationTests
         public async Task RunAsync_TargetIsAvailable_CorrectUriPathSentAsync(string httpMethod)
         {
             // Arrange
-            var key = Path.GetRandomFileName();
-            await Database.ListRightPushAsync(key, JsonConvert.SerializeObject(
+            var method = new HttpMethod(httpMethod);
+            var path = $"{Guid.NewGuid()}/{Guid.NewGuid()}/{Guid.NewGuid()}";
+
+            await Database.ListRightPushAsync(path, JsonConvert.SerializeObject(
                 new Response()
                 {
                     StatusCode = HttpStatusCode.Accepted
                 }));
-
-            var method = new HttpMethod(httpMethod);
-            var path = $"{Guid.NewGuid()}/{Guid.NewGuid()}/{Guid.NewGuid()}";
 
             // Act
             await Client.SendAsync(
@@ -115,10 +114,7 @@ namespace Rehttp.IntegrationTests
             );
 
             // Assert
-            string actualRequestAsString = await Database.ListLeftPopAsync($"response/{path}");
-            Assert.NotNull(actualRequestAsString);
-
-            var invocation = JsonConvert.DeserializeObject<Invocation>(actualRequestAsString);
+            var invocation = JsonConvert.DeserializeObject<Invocation>(await Database.ListLeftPopAsync($"response/{path}"));
             Assert.Equal($"http://localhost:7073/test/universal/{path}", invocation.TargetUri.ToString());
         }
 
@@ -132,24 +128,27 @@ namespace Rehttp.IntegrationTests
         [InlineData("TRACE")]
         public async Task RunAsync_TargetIsAvailable_CorrectUriQuerySentAsync(string httpMethod)
         {
-            using (var uniqueQueue = new UniqueQueue())
-            {
-                var method = new HttpMethod(httpMethod);
-                var queueName = uniqueQueue.Queue.Name;
-                var param1 = Guid.NewGuid();
-                var param2 = Guid.NewGuid();
+            // Arrange
+            var method = new HttpMethod(httpMethod);
+            var path = Path.GetRandomFileName();
+            var param1 = Guid.NewGuid();
+            var param2 = Guid.NewGuid();
 
-                await Client.SendAsync(
-                    new HttpRequestMessage(method,
-                        $"http://localhost:7072/r/http://localhost:7073/test/ok/{queueName}?param1={param1}&param2={param2}")
-                );
+            await Database.ListRightPushAsync(path, JsonConvert.SerializeObject(
+                new Response()
+                {
+                    StatusCode = HttpStatusCode.Accepted
+                }));
 
-                var message = await uniqueQueue.Queue.GetMessageAsync();
-                Assert.NotNull(message);
+            // Act
+            await Client.SendAsync(
+                new HttpRequestMessage(method,
+                    $"http://localhost:7072/r/http://localhost:7073/test/universal/{path}?param1={param1}&param2={param2}")
+            );
 
-                var invocation = JsonConvert.DeserializeObject<Invocation>(message.AsString);
-                Assert.Equal($"http://localhost:7073/test/ok/{queueName}?param1={param1}&param2={param2}", invocation.TargetUri.ToString());
-            }
+            // Assert
+            var invocation = JsonConvert.DeserializeObject<Invocation>(await Database.ListLeftPopAsync($"response/{path}"));
+            Assert.Equal($"http://localhost:7073/test/universal/{path}?param1={param1}&param2={param2}", invocation.TargetUri.ToString());
         }
 
         [Theory]
